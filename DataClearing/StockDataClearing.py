@@ -40,12 +40,12 @@ def Get_Stock_Data(TotalSharePath,StockInfoPath,StockPath):
     
     #股票信息
     Stock=pd.read_csv(StockInfoPath,encoding='gbk')
-    Stock.columns=['Date','Code','AdjClose','Close','ST','FreeFloatA','Industry']
+    Stock.columns=['Date','Code','AdjOpen','AdjHigh','AdjLow','AdjClose','Close','Volume','Amount','ST','FreeFloatA','Industry']
     print 'Get Stock Info'
     
     #股票与总股本的数据，删除2007年以前数据
     StockData=Stock.merge(TotalShare,on=['Date','Code'],how='outer')
-    StockData=StockData[StockData['Date']>'2007-01-01']
+    StockData=StockData[StockData['Date']>'2006-01-01']
     print 'Merged'
     
     #
@@ -88,7 +88,7 @@ def Get_Industry(InputPath,OutputPath):
     Industry=pd.DataFrame()
     CodeList=[str(int(a)) for a in Data[u'股票代码'].values.tolist()]
     CodeList=['0'*(6-len(a))+a if len(a)<6 else a for a in CodeList]
-    CodeList=[('SSE_' if a=='6' else 'SZE_')+a for a in CodeList]
+    CodeList=[('SSE_' if a[0]=='6' else 'SZE_')+a for a in CodeList]
     Industry['Code']=CodeList
     Industry['Industry']=Data[u'行业名称'].values.tolist()
     Industry.index=[time.strftime('%Y-%m-%d',time.strptime(str(a),'%Y-%m-%d %H:%M')) for a in Data[u'起始日期'].values.tolist()]
@@ -97,7 +97,7 @@ def Get_Industry(InputPath,OutputPath):
 #输入路径
 HigherDir=os.path.dirname(os.getcwd())
 TotalSharePath=os.path.dirname(HigherDir)+'\\Data\\zgb\\'
-StockInfoPath=os.path.dirname(HigherDir)+'\\Data\\stock_info\\stock_info.csv'
+StockInfoPath=os.path.dirname(HigherDir)+'\\Data\\stock_info\\day.csv'
 IndustryPath=os.path.dirname(HigherDir)+'\\Data\\stock_info\\SwClass.csv'
 
 #输出路径
