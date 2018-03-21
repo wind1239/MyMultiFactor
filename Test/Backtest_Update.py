@@ -9,19 +9,22 @@ import os
 import pandas as pd
 import time
 
-Index='ZZ500'
+Index='ZZ500_ZZ1000'
 Period=5
-Percent=1/5.0
+Amount=100.0
+FileName='test_all'
+
+
 Cost=0.003
 LongStockLeverage=1
 ShortStockLeverage=0.6
 IndexLeverage=0.3
-BacktestID=Index+'_haha'
-
-#Value=['EP_LYR','EP_TTM','BP_MRQ','SP_LYR','SP_TTM','CFP_CFO_TTM'] 
+#
+#Value=['EP_LYR','EP_TTM','BP_MRQ','PB_MRQ_OPP','SP_LYR','SP_TTM','CFP_CFO_TTM'] 
 #Growth=['GR_YOY','OR_YOY','OP_YOY','NPP_YOY']
 #Momentum=['Momentum5_OPP','Momentum20_OPP','Momentum30_OPP']
-#FactorList=Value+Growth+Momentum
+#Value_Growth=['PE_TTM_IndustryRank_Diff_OPP_90']
+#FactorList=Value+Growth+Momentum+Value_Growth
 
 #因子列表
 def Get_Factor_List():
@@ -30,13 +33,13 @@ def Get_Factor_List():
     Growth=['GR_YOY','OR_YOY','OP_YOY','NPP_YOY'] 
     Momentum=['Momentum5_OPP','Momentum10_OPP','Momentum20_OPP','Momentum30_OPP','Momentum60_OPP','Momentum90_OPP']
     Volatility=['Vol20_OPP','Vol30_OPP','Vol60_OPP','Vol90_OPP']
-    Value_Growth=['PE_IndustryRank_Diff_OPP_90','PE_IndustryRank_Diff_OPP_180','PE_IndustryRank_Diff_OPP_270','PE_IndustryRank_Diff_OPP_360',
-                  'PE_IndustryRank_Diff_OPP_450','PE_IndustryRank_Diff_OPP_540','PE_IndustryRank_Diff_OPP_630','PE_IndustryRank_Diff_OPP_720']    
+    Value_Growth=['PE_TTM_IndustryRank_Diff_OPP_90','PE_TTM_IndustryRank_Diff_OPP_180','PE_TTM_IndustryRank_Diff_OPP_270','PE_TTM_IndustryRank_Diff_OPP_360',
+                  'PE_TTM_IndustryRank_Diff_OPP_450','PE_TTM_IndustryRank_Diff_OPP_540','PE_TTM_IndustryRank_Diff_OPP_630','PE_TTM_IndustryRank_Diff_OPP_720']    
     FactorList=Value+Growth+Momentum+Volatility+Value_Growth
     return FactorList
 
 FactorList=Get_Factor_List()
-print FactorList
+
 
 
 #判断路径是否存在，不存在则建立
@@ -45,7 +48,8 @@ def Create_Path(Path):
         os.makedirs(Path) 
 
 #获取数据路径
-def Get_Data_Path(Index,BacktestID):
+def Get_Data_Path(Index,FileName):
+    BacktestID=Index+'_'+FileName
     DataPath=os.path.dirname(os.getcwd())+'\\Data\\'
     FactorLibPath=DataPath+'FactorLibrary\\' 
     StockPath=DataPath+'StockElement\\'
@@ -80,12 +84,12 @@ def Get_Factor_Data(FactorLibPath,FactorList):
 #提取所有的因子值
 def Prepare4Score(Dict,FactorPath,IndexComponentPath):
     IndexComponent=pd.read_csv(IndexComponentPath)
-    DateList=sorted(list(set(IndexComponent['Date'].values.tolist())&set(Dict[FactorList[0]].columns.tolist())))
-
+    DateList=sorted(list(set(IndexComponent['date'].values.tolist())&set(Dict[FactorList[0]].columns.tolist())))
+    DateList=[a for a in DateList if a>'2007-01-01']
     for Date in DateList:
         print 'Prepare for score',Date
         df=pd.DataFrame()
-        Code=IndexComponent[IndexComponent['Date']==Date]['Code'].values.tolist()
+        Code=IndexComponent[IndexComponent['date']==Date]['code'].values.tolist()
         df['Code']=Code
         for Factor in FactorList:
             if Date in Dict[Factor].columns.tolist():
@@ -101,10 +105,9 @@ def Output_Signal(Code,Industry,SignalPath):
     df['Weight']=[1.0/len(Code)]*len(Code)
     df.to_csv(SignalPath,index=None,encoding='gbk')
 
-def Get_Signal(StockPath,FactorPath,ScorePath,TopSignalPath,BottomSignalPath,Period,Percent):
+def Get_Signal(StockPath,FactorPath,ScorePath,TopSignalPath,BottomSignalPath,Period,Amount):
     IndustryData=pd.read_csv(StockPath+'Industry.csv',index_col=1,encoding='gbk')
     del IndustryData['Unnamed: 0']
-#    IndustryData=pd.Series(IndustryData['Industry'].values,index=IndustryData['Code'].values)
     FileList=sorted(os.listdir(FactorPath))
     
     #分行业
@@ -116,7 +119,6 @@ def Get_Signal(StockPath,FactorPath,ScorePath,TopSignalPath,BottomSignalPath,Per
         Data=pd.read_csv(FactorPath+File,index_col=0)
         Data['Industry']=IndustryData.reindex(Data.index).fillna(value=u'其他')['Industry'].values.tolist()
         Data=Data.sort_values(by=['Industry'])
-#        Data=Data[Data['Industry']!=u'其他']
         Score=Data.groupby(by=['Industry']).rank().fillna(value=0).T.sum()
         df=pd.DataFrame()
         df['Score']=Score
@@ -126,6 +128,8 @@ def Get_Signal(StockPath,FactorPath,ScorePath,TopSignalPath,BottomSignalPath,Per
         
         df=df[df['Score']!=0]
         df=df[df['Industry']!=u'其他']
+        
+        Percent=Amount/len(df)
         
         Top=df.groupby('Industry').apply(lambda x: x.head(int(round(len(x)*Percent,0))))
         Code=Top.index.get_level_values(1).tolist()
@@ -145,12 +149,7 @@ def Get_Index_Return(IndexPath,Date,Index):
     IndexReturn=[float(a)/100 for a in IndexReturn[u'涨跌幅%'].values.tolist()]
     return IndexReturn 
 
-def Get_Portfolio_Return(AdjOpen,AdjClose,DateList,SignalPath): 
-#    DateList=Date
-#    SignalPath=TopSignalPath
-#    
-#    
-#    Date=DateList[0]
+def Get_Portfolio_Return(AdjOpen,AdjClose,DateList,SignalPath,Flag): 
     
     SignalFileList=sorted(os.listdir(SignalPath))
     CalendarDate=AdjClose.index.tolist()
@@ -163,7 +162,6 @@ def Get_Portfolio_Return(AdjOpen,AdjClose,DateList,SignalPath):
     for Date in DateList:
         print 'Backtest',Date
         FormerDate=CalendarDate[CalendarDate.index(Date)-1]
-#        FormerSignalFile=FormerDate+'.csv'
         File=Date+'.csv'
         if File in SignalFileList:
             DailyReturn=0
@@ -189,19 +187,19 @@ def Get_Portfolio_Return(AdjOpen,AdjClose,DateList,SignalPath):
             else:
                 TurnOver=len(set(OldCode)-set(Code))*1.0/len(OldCode)
                 
-            DailyReturn=DailyReturn-Cost*TurnOver
+            DailyReturn=Flag*DailyReturn-Cost*TurnOver
         else:
             OldCode=Code
             TurnOver=0
             StockReturn=(AdjClose[Code].loc[Date]-AdjClose[Code].loc[FormerDate])/Open
             StockReturn=StockReturn.fillna(0)
-            DailyReturn=sum([StockReturn[a]*Weight[a] for a in range(len(Weight))])
+            DailyReturn=Flag*sum([StockReturn[a]*Weight[a] for a in range(len(Weight))])
             
         TurnOverList.append(TurnOver)
         Return.append(DailyReturn)
     return Return    
 
-def Backtest(StockPath,FactorPath,IndexPath,TopSignalPath,BottomSignalPath):
+def Backtest(StockPath,FactorPath,IndexPath,TopSignalPath,BottomSignalPath,BacktestPath):
     
     AdjOpen=pd.read_csv(StockPath+'AdjOpen.csv',index_col=0)
     AdjClose=pd.read_csv(StockPath+'AdjClose.csv',index_col=0)    
@@ -211,12 +209,12 @@ def Backtest(StockPath,FactorPath,IndexPath,TopSignalPath,BottomSignalPath):
     
     ZZ500=Get_Index_Return(IndexPath,Date,'ZZ500')
     HS300=Get_Index_Return(IndexPath,Date,'HS300')
-    Top=Get_Portfolio_Return(AdjOpen,AdjClose,Date,TopSignalPath)
-    Bottom=Get_Portfolio_Return(AdjOpen,AdjClose,Date,BottomSignalPath)
+    Top=Get_Portfolio_Return(AdjOpen,AdjClose,Date,TopSignalPath,1)
+    Bottom=Get_Portfolio_Return(AdjOpen,AdjClose,Date,BottomSignalPath,-1)
     
     df=pd.DataFrame()
     df['Top']=Top
-    df['Bottom']=[-a for a in Bottom]
+    df['Bottom']=Bottom
     df['HS300']=HS300
     df['ZZ500']=ZZ500
     
@@ -252,16 +250,18 @@ def Backtest(StockPath,FactorPath,IndexPath,TopSignalPath,BottomSignalPath):
     df.to_csv(BacktestPath+'Return_'+str(Period)+'Days.csv')
     
 
-Start=time.clock()    
-FactorLibPath,StockPath,BacktestPath,FactorPath,ScorePath,TopSignalPath,BottomSignalPath,IndexPath,IndexComponentPath=Get_Data_Path(Index,BacktestID)
+Start=time.clock()  
 
 
-Dict=Get_Factor_Data(FactorLibPath,FactorList)
-Prepare4Score(Dict,FactorPath,IndexComponentPath)
+print Index,FactorList
+FactorLibPath,StockPath,BacktestPath,FactorPath,ScorePath,TopSignalPath,BottomSignalPath,IndexPath,IndexComponentPath=Get_Data_Path(Index,FileName)
 
-Get_Signal(StockPath,FactorPath,ScorePath,TopSignalPath,BottomSignalPath,Period,Percent)
+#Dict=Get_Factor_Data(FactorLibPath,FactorList)
+#Prepare4Score(Dict,FactorPath,IndexComponentPath)
 
-Backtest(StockPath,FactorPath,IndexPath,TopSignalPath,BottomSignalPath)
+Get_Signal(StockPath,FactorPath,ScorePath,TopSignalPath,BottomSignalPath,Period,Amount)
+
+Backtest(StockPath,FactorPath,IndexPath,TopSignalPath,BottomSignalPath,BacktestPath)    
 
 End=time.clock()
 print End-Start

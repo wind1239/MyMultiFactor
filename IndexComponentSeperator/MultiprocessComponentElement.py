@@ -6,28 +6,17 @@ Created on Tue Feb 06 16:27:56 2018
 """
 import multiprocessing
 import time
-import os
-import numpy as np
 from ComponentElement import * 
 
- 
+IndexList=['SZ50','HS300','ZZ500','ZZ1000']
 if __name__ == "__main__":
 
     CPU=multiprocessing.cpu_count()
     print("The number of CPU is:" + str(CPU))  
     
-    HigherDir=os.path.dirname(os.getcwd())
-    IndexComponentPath=HigherDir+'\\Data\\IndexComponent\\'
-    Num=len(os.listdir(IndexComponentPath))
-    Interval=Num/(CPU-1)
-    if Interval<=0:
-        Interval=Interval+1
-    elif len(range(0,Num,Interval))>=7 or Interval<=0:
-        Interval=Interval+1
-    for i in range(0,Num,Interval):
-        Start=i
-        End=i+Interval+2   
-        p = multiprocessing.Process(target = Component_Element, args = (Start,End,))         
+
+    for Index in IndexList:
+        p = multiprocessing.Process(target = Component_Element, args = (Index,))         
         p.start() 
         time.sleep(1)
         

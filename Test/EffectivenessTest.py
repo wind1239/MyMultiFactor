@@ -13,7 +13,7 @@ warnings.filterwarnings('ignore')
 
 #测试数据
 FactorName='PE_IndustryRank_Diff_OPP_90'
-Index='All'
+Index='ZZ1000'
 Year=0 #单独看某一年的话，year=某一年，全部回测时间的话，year=0
 Quantile=10
 
@@ -111,5 +111,5 @@ def Effectiveness_Test(FactorName,Index,Year,Quantile):
     
     End=time.clock()
     print End-Start
-#Effectiveness_Test(FactorName,Index,Year,Quantile)
+Effectiveness_Test(FactorName,Index,Year,Quantile)
 

@@ -13,11 +13,16 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-PortfolioName='TopMinusZZ500'
-BenchmarkIndex='ZZ500'
 
-Index='ZZ500'
-BacktestID=Index+'_haha'
+PortfolioName='TopMinusZZ500'
+#PortfolioName='TopMinusHS300'
+#PortfolioName='TopMinusBottom'
+BenchmarkIndex='HS300'
+
+List=['All','HS300','SZ50','ZZ500','ZZ1000','HS300_SZ50','HS300_ZZ500','HS300_ZZ1000','SZ50_ZZ500','SZ50_ZZ1000','ZZ500_ZZ1000','HS300_SZ50_ZZ500','HS300_SZ50_ZZ1000','HS300_ZZ500_ZZ1000','SZ50_ZZ500_ZZ1000','HS300_SZ50_ZZ500_ZZ1000']
+Index='ZZ500_ZZ1000'
+print Index
+BacktestID=Index+'_test_all'
 FileName='Return_5Days'
 #FileName='1'
 

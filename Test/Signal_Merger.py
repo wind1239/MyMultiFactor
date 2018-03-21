@@ -8,10 +8,10 @@ Created on Mon Mar 12 14:41:40 2018
 import os
 import pandas as pd
 
-Index='ZZ500'
+Index='ZZ500_ZZ1000'
 Period=5
 Signal='Top'
-BacktestID=Index+'_BestVersion_wh'
+BacktestID=Index+'_BestVersion'
 
 HigherDir=os.path.dirname(os.getcwd())
 DataPath=HigherDir+'\\Data\\BacktestResult\\'+BacktestID+'\\'
